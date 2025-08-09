@@ -152,7 +152,6 @@ func _qkd_api_call(kme_url string, keyid string) string {
 
 	if response.Keys[0].KeyID != qkdRuntime.keyID {
 		log.Fatalf("[!!] KME returned keyID not matching the provided keyID. [Expected: %s, Got: %s]", qkdRuntime.keyID, response.Keys[0].KeyID)
-		os.Exit(-1)
 	}
 
 	return response.Keys[0].Key
