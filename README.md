@@ -1,2 +1,2 @@
-# qkd-sae-keys-retrieval
-QKD Security Application Entity Keys Retrieval toolbox
+# qkd-kme-keys-retrieval
+QKD KME Keys Retrieval toolbox
