@@ -13,14 +13,6 @@ import (
 	"time"
 )
 
-type QKDRuntime struct {
-	certificate string
-	privateKey  string
-	kme         string
-	sae         string
-	keyID       string
-}
-
 // QKD KME response JSON parser
 type KeysResponse struct {
 	Keys []Key `json:"keys"`
@@ -33,9 +25,6 @@ type Key struct {
 const kmeApiDecUrl string = "/api/v1/keys/%s/dec_keys"
 const kmeApiEncUrl string = "/api/v1/keys/%s/enc_keys"
 
-var qkdRuntime QKDRuntime
-var debug bool
-
 func _KMEApiGenerator() string {
 	var _durl string = ""
 	if qkdRuntime.keyID != "" {
@@ -45,10 +34,10 @@ func _KMEApiGenerator() string {
 	}
 	kmeURL := fmt.Sprintf("%s%s", strings.TrimSuffix(qkdRuntime.kme, "/"), _durl)
 	if debug {
-		log.Printf("[dd] QKD API URL: %s\n", kmeURL)
-		log.Printf("[dd] QKD SAE: %s\n", qkdRuntime.sae)
-		log.Printf("[dd] QKD KeyID: %s\n", qkdRuntime.keyID)
-		log.Printf("[dd] TLS options: certificate[%s] -- privatekey[%s]\n", qkdRuntime.certificate, qkdRuntime.privateKey)
+		log.Printf("[--] QKD API URL: %s\n", kmeURL)
+		log.Printf("[--] QKD SAE: %s\n", qkdRuntime.sae)
+		log.Printf("[--] QKD KeyID: %s\n", qkdRuntime.keyID)
+		log.Printf("[--] TLS options: certificate[%s] -- privatekey[%s]\n", qkdRuntime.certificate, qkdRuntime.privateKey)
 	}
 	return kmeURL
 }
@@ -139,33 +128,23 @@ func _KMEApiCall(kmeURL string) [2]string {
 	return [2]string{response.Keys[0].KeyID, response.Keys[0].Key}
 }
 
-func KMEKeyGet(certificate, privateKey, kmeUrl, saeName, keyID string, _debug bool) (bool, [2]string) {
-
-	if certificate == "" || privateKey == "" {
+func KMEKeyGet() (bool, [2]string) {
+	if qkdRuntime.certificate == "" || qkdRuntime.privateKey == "" {
 		return false, [2]string{"", "Both certificate and private key must be provided."}
 	}
 
-	if kmeUrl == "" {
+	if qkdRuntime.kme == "" {
 		return false, [2]string{"", "KME URL must be provided."}
 	} else {
-		if kmeUrl[:8] != "https://" && kmeUrl[:7] != "http://" {
+		if qkdRuntime.kme[:8] != "https://" && qkdRuntime.kme[:7] != "http://" {
 			return false, [2]string{"", "KME URL must use HTTP or HTTPS."}
 		}
 	}
 
-	if saeName == "" {
+	if qkdRuntime.sae == "" {
 		return false, [2]string{"", "SAE Name must be provided."}
 	}
 
-	debug = _debug
-
-	qkdRuntime = QKDRuntime{
-		certificate: certificate,
-		privateKey:  privateKey,
-		kme:         kmeUrl,
-		sae:         saeName,
-		keyID:       keyID,
-	}
 	kmeURL := _KMEApiGenerator()
 	key := _KMEApiCall(kmeURL)
 
