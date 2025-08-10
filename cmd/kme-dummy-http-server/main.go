@@ -40,6 +40,7 @@ func keysHandler(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	http.HandleFunc("/api/v1/keys/CONS_TIM_UPT/dec_keys", keysHandler)
+	http.HandleFunc("/api/v1/keys/CONS_TIM_UPT/enc_keys", keysHandler)
 	log.Println("Server is listening on :8080...")
 	if err := http.ListenAndServe(":8080", nil); err != nil {
 		log.Fatalf("Server failed to start: %v", err)

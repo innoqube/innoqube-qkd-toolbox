@@ -1,4 +1,4 @@
-package iqlogger
+package iqutils
 
 import (
 	"io"
