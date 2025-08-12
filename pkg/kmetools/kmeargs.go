@@ -1,4 +1,4 @@
-package iqutils
+package kmetools
 
 import (
 	"flag"
@@ -17,6 +17,7 @@ type QKDRuntime struct {
 	X509CertSubject string
 	X509FilePrefix  string
 	X509Days        int
+	X509PrintOut    bool
 }
 
 var qkdRuntime QKDRuntime
@@ -31,6 +32,7 @@ var keyid = flag.String("qkd-keyid", os.Getenv("QKD_KEYID"), "(optional) ID for 
 var x509CertSubject = flag.String("x509-cert-subject", os.Getenv("QKD_X509_CERT_SUBJECT"), "x509 Certificate subject: '/C=RO/ST=TM/L=Timisoara/OU=Quantum Division/O=InnoQube/CN=quantum-app-1'")
 var x509FilePrefix = flag.String("x509-file-prefix", "x509-quantum-crypto", "x509 certificate files prefix (for both certificate and private key) (default: x509-quantum-crypto)")
 var x509Days = flag.Int("x509-days", 365, "x509 certificate validity period in days (default: 365)")
+var x509PrintOut = flag.Bool("x509-print-out", false, "Print x509 certificate and private key to stdout (default: false)")
 
 var cdebug = flag.Bool("debug", false, "Enable debug mode")
 var cquiet = flag.Bool("quiet", false, "Enable quiet mode; it will output the retrieved keys like keyID:key")
@@ -63,6 +65,11 @@ func ArgsValidator() QKDRuntime {
 		log.Fatalf("[!!] QKD KME endpoint must be provided.")
 		flag.Usage()
 	}
+	var kmeURLs string = *kmeURL
+	if kmeURLs[:8] != "https://" && kmeURLs[:7] != "http://" {
+		log.Fatalf("[!!] KME URL must use HTTP or HTTPS.")
+		flag.Usage()
+	}
 
 	debug = *cdebug
 	quiet = *cquiet
@@ -78,6 +85,7 @@ func ArgsValidator() QKDRuntime {
 		X509CertSubject: *x509CertSubject,
 		X509FilePrefix:  *x509FilePrefix,
 		X509Days:        *x509Days,
+		X509PrintOut:    *x509PrintOut,
 	}
 
 	return qkdRuntime

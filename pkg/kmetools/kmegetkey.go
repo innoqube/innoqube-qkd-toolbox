@@ -1,4 +1,4 @@
-package iqutils
+package kmetools
 
 import (
 	"bytes"
@@ -25,7 +25,7 @@ type Key struct {
 const kmeApiDecUrl string = "/api/v1/keys/%s/dec_keys"
 const kmeApiEncUrl string = "/api/v1/keys/%s/enc_keys"
 
-func _KMEApiGenerator() string {
+func kmeApiGenerator() string {
 	var _durl string = ""
 	if qkdRuntime.keyID != "" {
 		_durl = fmt.Sprintf(kmeApiDecUrl, qkdRuntime.sae)
@@ -42,7 +42,7 @@ func _KMEApiGenerator() string {
 	return kmeURL
 }
 
-func _KMEApiCall(kmeURL string) [2]string {
+func kmeApiCall(kmeURL string) [2]string {
 	tlsCert, err := tls.LoadX509KeyPair(qkdRuntime.certificate, qkdRuntime.privateKey)
 	if err != nil {
 		log.Fatalf("[!!] Error loading client key pair: %s", err)
@@ -129,24 +129,9 @@ func _KMEApiCall(kmeURL string) [2]string {
 }
 
 func KMEKeyGet() (bool, [2]string) {
-	if qkdRuntime.certificate == "" || qkdRuntime.privateKey == "" {
-		return false, [2]string{"", "Both certificate and private key must be provided."}
-	}
 
-	if qkdRuntime.kme == "" {
-		return false, [2]string{"", "KME URL must be provided."}
-	} else {
-		if qkdRuntime.kme[:8] != "https://" && qkdRuntime.kme[:7] != "http://" {
-			return false, [2]string{"", "KME URL must use HTTP or HTTPS."}
-		}
-	}
-
-	if qkdRuntime.sae == "" {
-		return false, [2]string{"", "SAE Name must be provided."}
-	}
-
-	kmeURL := _KMEApiGenerator()
-	key := _KMEApiCall(kmeURL)
+	kmeURL := kmeApiGenerator()
+	key := kmeApiCall(kmeURL)
 
 	return true, key
 }

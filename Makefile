@@ -43,9 +43,6 @@ clean:
 	@rm -rf $(BUILD_DIR)/*
 	@echo "Done!"
 
-# --- Specific Targets for Each Binary ---
-# These targets are generated dynamically based on the BINS variable.
-
 # Loop through each binary and create a build target for it
 $(foreach bin,$(BINS),$(eval .PHONY: build-$(bin)))
 $(foreach bin,$(BINS),$(eval build-$(bin): $(BUILD_DIR)/$(bin)))

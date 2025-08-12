@@ -2,13 +2,13 @@ package main
 
 import (
 	"fmt"
-	"innoqube-qkd-toolbox/pkg/iqutils"
+	"innoqube-qkd-toolbox/pkg/kmetools"
 	"log"
 )
 
 func main() {
-	var qkdr iqutils.QKDRuntime = iqutils.ArgsValidator()
-	status, key := iqutils.KMEKeyGet()
+	var qkdr kmetools.QKDRuntime = kmetools.ArgsValidator()
+	status, key := kmetools.KMEKeyGet()
 	if status {
 		if qkdr.Quiet {
 			fmt.Printf("%s:%s\n", key[0], key[1])
