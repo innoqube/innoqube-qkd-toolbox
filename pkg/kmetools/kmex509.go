@@ -48,26 +48,23 @@ func decodeCertSubject(dn string) pkix.Name {
 	return name
 }
 
-func KMEx509Generator() ([]byte, []byte) {
-	if qkdRuntime.X509CertSubject == "" {
+func KMEx509Generator(certSubject string, validity int, key string) ([]byte, []byte) {
+	if certSubject == "" {
 		log.Fatalf("[!!] X509 certificate subject must be provided.")
 	}
-	if qkdRuntime.X509FilePrefix == "" {
-		log.Fatalf("[!!] X509 certificate file prefix must be provided.")
-	}
-	if qkdRuntime.X509Days <= 0 {
+	if validity <= 0 {
 		log.Fatalf("[!!] X509 certificate validity period must be positive.")
 	}
 
-	status, key := KMEKeyGet()
-	if status {
-		b64seed = key[1]
-	} else {
-		log.Fatalf("[!!] Error: %s\n", key[1])
+	if key == "" {
+		log.Fatalf("[!!] X509 seed key must be provided.")
 	}
+
+	b64seed = key
+
 	rawseed, err := base64.StdEncoding.DecodeString(b64seed)
 	if err != nil {
-		log.Fatalf("[!!] Error decoding Base64 seed: %v", err)
+		log.Fatalf("[!!] Error decoding seed: %v", err)
 	}
 
 	if len(rawseed) != ed25519.SeedSize {
@@ -88,15 +85,15 @@ func KMEx509Generator() ([]byte, []byte) {
 			CommonName:         "quantum app 1",
 		},
 		NotBefore:             time.Now(),
-		NotAfter:              time.Now().AddDate(0, 0, qkdRuntime.X509Days),
+		NotAfter:              time.Now().AddDate(0, 0, validity),
 		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
 		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
 		BasicConstraintsValid: true,
 		IsCA:                  false,
 	}
 
-	if qkdRuntime.X509CertSubject != "" {
-		csrTemplate.Subject = decodeCertSubject(qkdRuntime.X509CertSubject)
+	if certSubject != "" {
+		csrTemplate.Subject = decodeCertSubject(certSubject)
 	}
 
 	privKeyBytes, err := x509.MarshalPKCS8PrivateKey(privateKey)

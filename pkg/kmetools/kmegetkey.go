@@ -13,6 +13,13 @@ import (
 	"time"
 )
 
+var certificate []byte
+var privateKey []byte
+var kmeUrl string
+var keyID string
+var sae string
+var debug bool = false
+
 // QKD KME response JSON parser
 type KeysResponse struct {
 	Keys []Key `json:"keys"`
@@ -27,25 +34,25 @@ const kmeApiEncUrl string = "/api/v1/keys/%s/enc_keys"
 
 func kmeApiGenerator() string {
 	var _durl string = ""
-	if qkdRuntime.keyID != "" {
-		_durl = fmt.Sprintf(kmeApiDecUrl, qkdRuntime.sae)
+	if keyID != "" {
+		_durl = fmt.Sprintf(kmeApiDecUrl, sae)
 	} else {
-		_durl = fmt.Sprintf(kmeApiEncUrl, qkdRuntime.sae)
+		_durl = fmt.Sprintf(kmeApiEncUrl, sae)
 	}
-	kmeURL := fmt.Sprintf("%s%s", strings.TrimSuffix(qkdRuntime.kme, "/"), _durl)
+	kmeURL := fmt.Sprintf("%s%s", strings.TrimSuffix(kmeUrl, "/"), _durl)
 	if debug {
 		log.Printf("[--] QKD API URL: %s\n", kmeURL)
-		log.Printf("[--] QKD SAE: %s\n", qkdRuntime.sae)
-		log.Printf("[--] QKD KeyID: %s\n", qkdRuntime.keyID)
-		log.Printf("[--] TLS options: certificate[%s] -- privatekey[%s]\n", qkdRuntime.certificate, qkdRuntime.privateKey)
+		log.Printf("[--] QKD SAE: %s\n", sae)
+		log.Printf("[--] QKD KeyID: %s\n", keyID)
+		log.Printf("[--] TLS options: certificate[%s] -- privatekey[%s]\n", certificate, privateKey)
 	}
 	return kmeURL
 }
 
 func kmeApiCall(kmeURL string) [2]string {
-	tlsCert, err := tls.LoadX509KeyPair(qkdRuntime.certificate, qkdRuntime.privateKey)
+	tlsCert, err := tls.X509KeyPair(certificate, privateKey)
 	if err != nil {
-		log.Fatalf("[!!] Error loading client key pair: %s", err)
+		log.Fatalf("[!!] Certificate and private key do not match: %v", err)
 	}
 	if debug {
 		log.Printf("[--] Loaded TLS certificate and private key successfully.")
@@ -68,7 +75,7 @@ func kmeApiCall(kmeURL string) [2]string {
 
 	reqData := map[string][]map[string]string{
 		"key_IDs": {
-			{"key_ID": qkdRuntime.keyID},
+			{"key_ID": keyID},
 		},
 	}
 	jd, err := json.Marshal(reqData)
@@ -84,7 +91,7 @@ func kmeApiCall(kmeURL string) [2]string {
 		log.Fatalf("[!!] Error creating request: %s", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
-	if qkdRuntime.keyID != "" {
+	if keyID != "" {
 		req.Body = nil
 	}
 
@@ -114,9 +121,9 @@ func kmeApiCall(kmeURL string) [2]string {
 		log.Fatalf("[!!] Error unmarshaling JSON: %s", err)
 	}
 
-	if qkdRuntime.keyID != "" {
-		if response.Keys[0].KeyID != qkdRuntime.keyID {
-			log.Fatalf("[!!] KME returned keyID not matching the provided keyID. [Expected: %s, Got: %s]", qkdRuntime.keyID, response.Keys[0].KeyID)
+	if keyID != "" {
+		if response.Keys[0].KeyID != keyID {
+			log.Fatalf("[!!] KME returned keyID not matching the provided keyID. [Expected: %s, Got: %s]", keyID, response.Keys[0].KeyID)
 		}
 	} else {
 		if debug {
@@ -128,8 +135,29 @@ func kmeApiCall(kmeURL string) [2]string {
 	return [2]string{response.Keys[0].KeyID, response.Keys[0].Key}
 }
 
-func KMEKeyGet() (bool, [2]string) {
+func KMEKeyGet(kCertificate, kPrivateKey []byte, kUrl, kID, kSae string, kDebug bool) (bool, [2]string) {
+	if kCertificate == nil || kPrivateKey == nil {
+		return false, [2]string{"", "[!!] Both certificate and private key must be provided."}
+	}
 
+	if kSae == "" {
+		return false, [2]string{"", "[!!] QKD SAE short name must be provided."}
+	}
+
+	if kUrl == "" {
+		return false, [2]string{"", "[!!] QKD KME endpoint must be provided."}
+	}
+
+	if !strings.HasPrefix(kUrl, "https://") && !strings.HasPrefix(kUrl, "http://") {
+		return false, [2]string{"", "[!!] KME URL must use HTTP or HTTPS."}
+	}
+
+	certificate = kCertificate
+	privateKey = kPrivateKey
+	kmeUrl = strings.TrimSpace(kUrl)
+	keyID = strings.TrimSpace(kID)
+	sae = strings.TrimSpace(kSae)
+	debug = kDebug
 	kmeURL := kmeApiGenerator()
 	key := kmeApiCall(kmeURL)
 
